@@ -41,8 +41,8 @@ jobs:
           version-type: beta # release
           changelog: "${{ github.event.release.body }}"
 
-          loaders: |
-            fabric
+          #loaders: |
+          #  fabric
           game-versions: |
             1.19.2
             1.19.4
