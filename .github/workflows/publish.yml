@@ -18,14 +18,24 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
       - name: Setup JDK
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v3
         with:
           distribution: "temurin"
           java-version: 17
+          cache: "gradle"
       - name: Change Version
         run: sed -i 's/mod_version=*/mod_version=${{ github.event.release.tag_name }}/g' gradle.properties
       - name: Build
         run: ./gradlew clean build
+      - name: Get Release Type
+        id: get-release
+        run: |
+          release-type="release"
+          case "${{ github.event.release.prerelease }}" in
+            *true*) release-type="beta" ;;
+            *false*) release-type="release" ;;
+            esac
+          echo "::set-output name=type::$release-type"
       - name: Publish
         uses: Kir-Antipov/mc-publish@v3.2
         with:
@@ -38,13 +48,7 @@ jobs:
 
           name: "Iconic v${{ github.event.release.tag_name }}"
           version: "${{ github.event.release.tag_name }}"
-          version-type: beta # release
+          version-type: "${{ steps.get-release.outputs.release-type }}"
           changelog: "${{ github.event.release.body }}"
-
-          #loaders: |
-          #  fabric
-          #game-versions: |
-          #  1.19.2
-          #  1.19.4
-          #java: |
-          #  17
+          java: |
+            17
