@@ -31,10 +31,9 @@ jobs:
         id: get-release
         run: |
           release-type="release"
-          case "${{ github.event.release.prerelease }}" in
-            *true*) release-type="beta" ;;
-            *false*) release-type="release" ;;
-            esac
+          if "${{ github.event.release.prerelease }}" == "true"; then
+            release-type="beta"
+          fi
           echo "::set-output name=type::$release-type"
       - name: Publish
         uses: Kir-Antipov/mc-publish@v3.2
