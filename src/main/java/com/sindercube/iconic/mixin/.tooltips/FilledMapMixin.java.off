@@ -1,0 +1,43 @@
+package com.sindercube.iconic.mixin.tooltips;
+
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.item.TooltipContext;
+import net.minecraft.item.FilledMapItem;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.map.MapState;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
+
+import java.util.List;
+
+@Mixin(FilledMapItem.class)
+public class FilledMapMixin {
+    /**
+     * @author Sindercube
+     * @reason Show ID
+     */
+    @Overwrite
+    public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
+        Integer mapID = FilledMapItem.getMapId(stack);
+        if (!context.isAdvanced() && !stack.hasCustomName()) {
+            tooltip.add(Text.translatable("filled_map.id_basic", mapID));
+        }
+        MapState mapState = FilledMapItem.getMapState(mapID, world);
+        if (mapState == null) {
+            tooltip.add(Text.translatable("filled_map.unknown"));
+            return;
+        }
+        if (mapState.locked) tooltip.add(Text.translatable("filled_map.locked"));
+        if (context.isAdvanced()) {
+            tooltip.add(Text.translatable("filled_map.id", mapID));
+            tooltip.add(Text.translatable("filled_map.scale", 1 << mapState.scale));
+            tooltip.add(Text.translatable("filled_map.level", mapState.scale, 4));
+        }
+    }
+
+
+}

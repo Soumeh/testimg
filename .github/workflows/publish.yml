@@ -1,0 +1,50 @@
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: "build"
+  cancel-in-progress: true
+
+env:
+  MODRINTH_ID: "daSyDfnP"
+  CURSEFORGE_ID: "846348"
+
+jobs:
+
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      - name: Setup JDK
+        uses: actions/setup-java@v1
+        with:
+          distribution: "temurin"
+          java-version: 17
+      - name: Change Version
+        run: sed -i 's/mod_version=*/mod_version=${{ github.event.release.tag_name }}/g' gradle.properties
+      - name: Build
+        run: ./gradlew clean build
+      - name: Publish
+        uses: Kir-Antipov/mc-publish@v3.2
+        with:
+          curseforge-id: "${{ env.CURSEFORGE_ID }}"
+          curseforge-token: "${{ secrets.CURSEFORGE_TOKEN }}"
+          modrinth-id: "${{ env.MODRINTH_ID }}"
+          modrinth-token: "${{ secrets.MODRINTH_TOKEN }}"
+          github-tag: "${{ github.event.release.tag_name }}"
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+          name: "Iconic v${{ github.event.release.tag_name }}"
+          version: "${{ github.event.release.tag_name }}"
+          version-type: beta # release
+          changelog: "${{ github.event.release.body }}"
+
+          loaders: |
+            fabric
+          game-versions: |
+            1.19.2
+            1.19.4
+          java: |
+            17

@@ -1,0 +1,20 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.sindercube.iconic.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "todo": [
+    "tooltips.FilledMapMixin",
+    "tooltips.ItemStackMixin",
+    "heldItemModel.ItemRendererMixin",
+
+    "splashes.SplashTextMixin",
+    "splashes.TitleMixin"
+  ],
+  "client": [
+    "emotes.ChatInputSuggestorMixin",
+    "emotes.SuggestionWindowMixin",
+    "emotes.TextFieldWidgetMixin",
+    "textComponents.SerializerMixin"
+  ]
+}

@@ -1,0 +1,6 @@
+[
+  { "text": "Iconic!" },
+  { "text": { "text": "Eye-conic!", "color": "#106050" }, "mod": "manic" },
+  { "text": { "icon": "star" } },
+  { "text": "Today is the day!", "date": "05 Aug", "weight": 1000 }
+]

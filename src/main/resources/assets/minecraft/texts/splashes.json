@@ -1,0 +1,6 @@
+[
+  { "text": "%username% IS YOU" },
+  { "text": "Merry X-mas! ", "date": "25 Dec", "weight": 1000 },
+  { "text": "Happy new year!", "date": "01 Jan", "weight": 1000 },
+  { "text": "OOoooOOOoooo! Spooky! ", "date": "31 Oct", "weight": 1000 }
+]

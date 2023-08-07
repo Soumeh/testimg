@@ -1,0 +1,17 @@
+accessWidener v1 named
+
+# tooltips
+accessible method net/minecraft/item/ItemStack isSectionVisible (ILnet/minecraft/item/ItemStack$TooltipSection;)Z
+accessible method net/minecraft/item/ItemStack parseBlockTag (Ljava/lang/String;)Ljava/util/Collection;
+accessible field net/minecraft/item/Item ATTACK_DAMAGE_MODIFIER_ID Ljava/util/UUID;
+accessible field net/minecraft/item/Item ATTACK_SPEED_MODIFIER_ID Ljava/util/UUID;
+
+# emotes
+accessible field net/minecraft/client/gui/screen/ChatInputSuggestor textField Lnet/minecraft/client/gui/widget/TextFieldWidget;
+
+# icons
+accessible field net/minecraft/client/MinecraftClient fontManager Lnet/minecraft/client/font/FontManager;
+accessible field net/minecraft/client/font/FontManager fontStorages Ljava/util/Map;
+
+# models
+accessible field net/minecraft/client/render/model/BakedModelManager models Ljava/util/Map;

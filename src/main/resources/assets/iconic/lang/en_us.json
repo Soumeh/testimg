@@ -1,0 +1,14 @@
+{
+	"tooltip.dyeable": "§8Dyeable",
+	"tooltip.color": "%s",
+	"tooltip.dyed": "Dyed",
+
+	"filled_map.id_basic": "#%s",
+
+	"resourcepack.information_tooltips.name":  "Information Tooltips",
+
+	"error.text_component.deserialize": "Don't know how to turn %s into a Component",
+	"error.text_component.score": "A score component needs a least a name and an objective",
+	"error.format_loader.file": "Failed to load JSON data from file '%s'",
+	"error.format_loader.type": "Fail '%s' must contain a JSON Object"
+}

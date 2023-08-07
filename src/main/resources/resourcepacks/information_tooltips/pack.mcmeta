@@ -1,0 +1,13 @@
+{
+  "pack": {
+    "pack_format": 9,
+    "name": "Information Tooltips",
+    "description": [
+      {"text": "Adds ", "color": "#1177dd"},
+      {"icon": "info"},
+      {"text": " information", "color": "#1177dd"},
+      {"text": " tooltips to items • "},
+      {"text": "W.I.P.", "color": "#FF3333"}
+    ]
+  }
+}

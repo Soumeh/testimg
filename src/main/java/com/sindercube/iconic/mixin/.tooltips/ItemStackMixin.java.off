@@ -1,0 +1,261 @@
+package com.sindercube.iconic.mixin.tooltips;
+
+import com.google.common.collect.Multimap;
+import com.sindercube.iconic.cache.Cache;
+import net.minecraft.client.item.TooltipContext;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.entity.EntityGroup;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.attribute.EntityAttribute;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.*;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.screen.ScreenTexts;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.Rarity;
+import net.minecraft.util.registry.Registry;
+import org.spongepowered.asm.mixin.*;
+
+import java.util.*;
+
+import static net.minecraft.item.ItemStack.*;
+
+@Mixin(ItemStack.class)
+public abstract class ItemStackMixin {
+
+    @Final
+    @Shadow
+    private static String UNBREAKABLE_KEY;
+    @Final
+    @Shadow
+    private static String CAN_DESTROY_KEY;
+    @Final
+    @Shadow
+    private static String CAN_PLACE_ON_KEY;
+    @Shadow
+    public abstract Text getName();
+    @Shadow
+    public abstract boolean hasNbt();
+    @Shadow
+    private NbtCompound nbt;
+    @Shadow
+    public abstract int getMaxDamage();
+    @Shadow
+    public abstract int getDamage();
+    @Shadow
+    public abstract Item getItem();
+    @Shadow
+    public abstract Rarity getRarity();
+    @Shadow
+    public abstract boolean hasCustomName();
+    @Shadow
+    protected abstract int getHideFlags();
+    @Shadow
+    public abstract NbtList getEnchantments();
+    @Shadow
+    public abstract Multimap<EntityAttribute, EntityAttributeModifier> getAttributeModifiers(EquipmentSlot equipmentSlot);
+
+    @Unique
+    private static int CACHED_HASH = 0;
+    @Unique
+    public List<Text> CACHED_TEXT;
+
+    @Unique
+    public boolean PREVIOUS_CONTEXT;
+
+    @Unique
+    public Cache<Integer, List<Text>> CACHE = new Cache<>();
+
+    /**
+        * @author Sindercube
+        * @reason Necessary.
+    */
+    @Overwrite
+    public List<Text> getTooltip(PlayerEntity player, TooltipContext context) {
+        ItemStack stack = (ItemStack)(Object)this;
+        int hash = stack.hashCode();
+        //hash = stack.
+        hash = context.isAdvanced() ? hash+1 : hash-1;
+        if (CACHE.has(hash)) return CACHE.get(hash);
+
+        List<Text> list = generateTooltip(player, context, stack);
+
+        CACHE.put(hash, list);
+        return list;
+    }
+
+    @Unique
+    public List<Text> generateTooltip(PlayerEntity player, TooltipContext context, ItemStack stack) {
+
+        List<Text> list = new ArrayList<>();
+
+        addNameTooltip(list, player, context, stack);
+
+        if (this.nbt != null && this.nbt.contains(DISPLAY_KEY, NbtElement.COMPOUND_TYPE)) {
+            NbtCompound display = this.nbt.getCompound(DISPLAY_KEY);
+            addLoreTooltips(list, player, context, stack, display);
+        }
+        addColorTooltips(list, player, context, stack);
+
+        if (ItemStack.isSectionVisible(this.getHideFlags(), ItemStack.TooltipSection.MODIFIERS)) {
+            for (EquipmentSlot equipmentSlot : EquipmentSlot.values()) {
+                Multimap<EntityAttribute, EntityAttributeModifier> multimap = this.getAttributeModifiers(equipmentSlot);
+                if (multimap.isEmpty()) continue;
+                list.add(ScreenTexts.EMPTY);
+                list.add(Text.translatable("item.modifiers." + equipmentSlot.getName()).formatted(Formatting.GRAY));
+                for (Map.Entry<EntityAttribute, EntityAttributeModifier> entry : multimap.entries()) {
+                    EntityAttributeModifier entityAttributeModifier = entry.getValue();
+                    double d = entityAttributeModifier.getValue();
+                    boolean bl = false;
+                    if (player != null) {
+                        if (entityAttributeModifier.getId() == Item.ATTACK_DAMAGE_MODIFIER_ID) {
+                            d += player.getAttributeBaseValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
+                            d += (double) EnchantmentHelper.getAttackDamage((ItemStack) (Object) this, EntityGroup.DEFAULT);
+                            bl = true;
+                        } else if (entityAttributeModifier.getId() == Item.ATTACK_SPEED_MODIFIER_ID) {
+                            d += player.getAttributeBaseValue(EntityAttributes.GENERIC_ATTACK_SPEED);
+                            bl = true;
+                        }
+                    }
+                    double e = entityAttributeModifier.getOperation() == EntityAttributeModifier.Operation.MULTIPLY_BASE || entityAttributeModifier.getOperation() == EntityAttributeModifier.Operation.MULTIPLY_TOTAL ? d * 100.0 : (entry.getKey().equals(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE) ? d * 10.0 : d);
+                    if (bl) {
+                        list.add(Text.literal(" ").append(Text.translatable("attribute.modifier.equals." + entityAttributeModifier.getOperation().getId(), MODIFIER_FORMAT.format(e), Text.translatable(entry.getKey().getTranslationKey()))).formatted(Formatting.DARK_GREEN));
+                        continue;
+                    }
+                    if (d > 0.0) {
+                        list.add(Text.translatable("attribute.modifier.plus." + entityAttributeModifier.getOperation().getId(), MODIFIER_FORMAT.format(e), Text.translatable(entry.getKey().getTranslationKey())).formatted(Formatting.BLUE));
+                        continue;
+                    }
+                    if (!(d < 0.0)) continue;
+                    list.add(Text.translatable("attribute.modifier.take." + entityAttributeModifier.getOperation().getId(), MODIFIER_FORMAT.format(e *= -1.0), Text.translatable(entry.getKey().getTranslationKey())).formatted(Formatting.RED));
+                }
+            }
+        }
+
+        addUniqueTooltips(list, player, context, stack);
+        addDurabilityTooltip(list, player, context, stack);
+        addNBTTooltip(list, player, context, stack);
+        if (context.isAdvanced()) {
+            list.add(Text.literal(Registry.ITEM.getId(this.getItem()).toString()).formatted(Formatting.DARK_GRAY));
+        }
+        return list;
+    }
+
+    @Unique
+    public final Class<DyeableItem> dyeableItemClass = DyeableItem.class;
+    @Unique
+    public boolean isDyeableItem(ItemStack stack) {
+        Class<? extends Item> itemClass = stack.getItem().getClass();
+        return dyeableItemClass.isAssignableFrom(itemClass);
+    }
+    @Unique
+    public void addLoreTooltips(List<Text> text, PlayerEntity player, TooltipContext context, ItemStack stack, NbtCompound display) {
+        if (display.getType("Lore") != NbtElement.LIST_TYPE) return;
+
+        NbtList lore = display.getList(LORE_KEY, NbtElement.STRING_TYPE);
+        for (NbtElement element : lore) {
+            String string = element.asString();
+            try {
+                MutableText loreText = Text.Serializer.fromJson(string);
+                if (loreText == null) continue;
+                text.add(loreText); // TODO: Make purple with formatting (and why he ourple 😂😂:joy:)
+                //text.add(Texts.setStyleIfAbsent(loreText, LORE_STYLE));
+            } catch (Exception ignored) {}
+        }
+    }
+    @Unique
+    public void addColorTooltips(List<Text> text, PlayerEntity player, TooltipContext context, ItemStack stack) {
+        // TODO: Make tooltips gray by default with formatting
+        if (!isDyeableItem(stack)) return;
+        if (!ItemStack.isSectionVisible(this.getHideFlags(), TooltipSection.DYE)) return;
+
+        if (!this.hasNbt()) {
+            text.add(Text.translatable("tooltip.dyeable"));
+            return;
+        }
+        if (!this.nbt.contains(DISPLAY_KEY)) {
+            text.add(Text.translatable("tooltip.dyeable"));
+            return;
+        }
+        NbtCompound display = this.nbt.getCompound(DISPLAY_KEY);
+        if (!display.contains("color")) {
+            text.add(Text.translatable("tooltip.dyeable"));
+            return;
+        }
+
+        int color = display.getInt("color");
+        String colorHex = String.format("#%06X", color);
+
+        if (context.isAdvanced()) {
+            text.add(Text.translatable("tooltip.color", colorHex).setStyle(Style.EMPTY.withColor(color)));
+        } else {
+            text.add(Text.translatable("tooltip.dyed").setStyle(Style.EMPTY.withColor(color)));
+        }
+    }
+    @Unique
+    public void addUniqueTooltips(List<Text> text, PlayerEntity player, TooltipContext context, ItemStack stack) {
+        int hides = this.getHideFlags();
+
+        if (ItemStack.isSectionVisible(hides, ItemStack.TooltipSection.ADDITIONAL)) {
+            if (player != null) this.getItem().appendTooltip(stack, player.world, text, context);
+        }
+
+        if (!this.hasNbt()) return;
+
+        if (ItemStack.isSectionVisible(hides, ItemStack.TooltipSection.ENCHANTMENTS)) {
+            ItemStack.appendEnchantments(text, this.getEnchantments());
+        }
+        if (ItemStack.isSectionVisible(hides, ItemStack.TooltipSection.UNBREAKABLE) && this.nbt.getBoolean(UNBREAKABLE_KEY)) {
+            text.add(Text.translatable("item.unbreakable").formatted(Formatting.BLUE));
+        }
+        if (ItemStack.isSectionVisible(hides, ItemStack.TooltipSection.CAN_DESTROY) && this.nbt.contains(CAN_DESTROY_KEY, NbtElement.LIST_TYPE)) {
+            NbtList list = this.nbt.getList(CAN_DESTROY_KEY, NbtElement.STRING_TYPE);
+            if (!list.isEmpty()) {
+                text.add(Text.empty());
+                text.add(Text.translatable("item.canBreak"));
+                for (NbtElement block: list) {
+                    text.addAll(ItemStack.parseBlockTag(block.asString()));
+                }
+            }
+        }
+        if (ItemStack.isSectionVisible(hides, ItemStack.TooltipSection.CAN_PLACE) && this.nbt.contains(CAN_PLACE_ON_KEY, NbtElement.LIST_TYPE)) {
+            NbtList list = this.nbt.getList(CAN_PLACE_ON_KEY, NbtElement.STRING_TYPE);
+            if (!list.isEmpty()) {
+                text.add(Text.empty());
+                text.add(Text.translatable("item.canPlace"));
+                for (NbtElement block: list) {
+                    text.addAll(ItemStack.parseBlockTag(block.asString()));
+                }
+            }
+        }
+    }
+    @Unique
+    public void addNameTooltip(List<Text> text, PlayerEntity player, TooltipContext context, ItemStack stack) {
+        MutableText name = this.getName().copy().formatted(this.getRarity().formatting);
+        if (this.hasCustomName()) {
+            name.formatted(Formatting.ITALIC);
+        }
+        text.add(name);
+    }
+    @Unique
+    public void addDurabilityTooltip(List<Text> text, PlayerEntity player, TooltipContext context, ItemStack stack) {
+        if (this.getMaxDamage() < 1) return;
+        if (context.isAdvanced()) {
+            text.add(Text.translatable("item.durability", this.getMaxDamage() - this.getDamage(), this.getMaxDamage()));
+        } else {
+            text.add(Text.translatable("item.durability", this.getMaxDamage() - this.getDamage(), this.getMaxDamage()));
+        }
+    }
+    @Unique
+    public void addNBTTooltip(List<Text> text, PlayerEntity player, TooltipContext context, ItemStack stack) {
+        if (!context.isAdvanced() || !this.hasNbt()) return;
+        text.add(Text.translatable("item.nbt_tags", this.nbt.getKeys().size()).formatted(Formatting.DARK_GRAY));
+    }
+}

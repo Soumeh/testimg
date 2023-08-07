@@ -1,0 +1,5 @@
+{
+  "item.rarity.common": {"inherit": true, "italic": true},
+  "item.rarity.rare": {"inherit": true, "color": "aqua"},
+  "item.rarity.legendary": [{"icon":"star"}, {"inherit": true}]
+}

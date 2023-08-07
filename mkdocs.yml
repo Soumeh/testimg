@@ -1,0 +1,41 @@
+site_name: Iconic
+site_url: https://iconic.sindercu.be
+
+nav:
+  - Home: 'index.md'
+  - Icons: 'icons.md'
+  - Splash Files: 'splash.md'
+  - Text Components (W.I.P.): 'text_component_api.md'
+
+theme:
+  name: material
+  palette:
+    scheme: slate 
+    primary: orange
+  logo: icon.png
+  favicon: icon.png
+  features:
+    - content.code.copy
+    - content.code.annotate
+
+plugins:
+  - offline
+  - search
+  - tags
+  - social
+
+extra:
+  social:
+    - icon: fontawesome/brands/github 
+      link: https://github.com/Sindercube/Iconic
+
+markdown_extensions:
+  - pymdownx.highlight:
+      use_pygments: true
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - def_list
+  - pymdownx.tasklist:
+      custom_checkbox: true
