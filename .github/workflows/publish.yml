@@ -30,11 +30,11 @@ jobs:
       - name: Get Release Type
         id: get-release
         run: |
-          release-type="release"
+          release_type="release"
           if "${{ github.event.release.prerelease }}" == "true"; then
-            release-type="beta"
+            release_type="beta"
           fi
-          echo "::set-output name=type::$release-type"
+          echo "::set-output name=type::$release_type"
       - name: Publish
         uses: Kir-Antipov/mc-publish@v3.2
         with:
